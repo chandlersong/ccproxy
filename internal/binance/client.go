@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	baseURL  = "https://api.binance.com"
-	proxyURL = "http://localhost:7890"
+	baseURL = "https://api.binance.com"
 )
 
 type Client struct {
+	baseUrl  string
+	proxyUrl string
 }
 
 func (p *Client) ping() {
@@ -20,8 +21,7 @@ func (p *Client) ping() {
 	cli.URL(baseURL)
 	// Define the default HTTP transport
 
-	servers := map[string]string{"http": proxyURL, "https": proxyURL}
-	cli.Use(proxy.Set(servers))
+	p.addProxyIfNecessary(cli)
 	// Perform the request
 	req := cli.Request()
 	req.Path("/api/v3/ping")
@@ -38,6 +38,22 @@ func (p *Client) ping() {
 	fmt.Printf("Body: %s", res.String())
 }
 
-func NewClient() *Client {
-	return &Client{}
+func (p *Client) addProxyIfNecessary(cli *gentleman.Client) bool {
+
+	hasProxy := p.proxyUrl != ""
+	if hasProxy {
+		servers := map[string]string{"http": p.proxyUrl, "https": p.proxyUrl}
+		cli.Use(proxy.Set(servers))
+	}
+
+	return hasProxy
+
+}
+
+func NewClientWithProxy(proxyUrl string) *Client {
+	return &Client{baseUrl: baseURL, proxyUrl: proxyUrl}
+}
+
+func NewClientWithBase(base string) *Client {
+	return &Client{baseUrl: base}
 }
